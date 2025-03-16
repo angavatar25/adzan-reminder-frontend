@@ -1,25 +1,61 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import io from "socket.io-client";
+import axios from "axios";
+import Home from "./views/Home";
+import useSchedules from "./hooks/useSchedules";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const socket = io("http://localhost:3000", { transports: ["websocket", "polling"] });
+
+const App = () => {
+    const {
+			schedules,
+			notifications,
+			handleStartingSchedule,
+			handleNewSchedule,
+			handleUpcomingSchedule,
+			handleSocketDeleteSchedule,
+			handleSocketUpdatedSchedule,
+			getScheduleData,
+			addSchedule,
+			updateSchedule,
+			deleteSchedule,
+			handleDateTime,
+			handleTitle,
+		} = useSchedules();
+
+    useEffect(() => {
+				getScheduleData();
+				handleNewSchedule();
+
+				handleSocketDeleteSchedule();
+				handleSocketUpdatedSchedule();
+
+				socket.off("upcomingSchedule").on("upcomingSchedule", handleUpcomingSchedule);
+        socket.off("scheduleStarted").on("scheduleStarted", handleStartingSchedule);
+				
+
+        return () => {
+					socket.off("upcomingSchedule");
+					socket.off("scheduleStarted");
+					socket.off("newSchedule");
+					socket.off("scheduleUpdated");
+					socket.off("scheduleDeleted");
+        };
+    }, []);
+
+    return (
+        <div>
+					<Home
+						notifications={notifications}
+						schedules={schedules}
+						addSchedule={addSchedule}
+						updateSchedule={updateSchedule}
+						deleteSchedule={deleteSchedule}
+						handleChangeTime={handleDateTime}
+						handleChangeTitle={handleTitle}
+					/>
+        </div>
+    );
+};
 
 export default App;
